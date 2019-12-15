@@ -97,6 +97,8 @@ export default {
             message: '恭喜你，登录成功！',
             type: 'success'
           });
+		  this.$store.commit('setToken',data.token) 
+		  window.localStorage.setItem('rrtoken',data.token)
           this.$router.replace({path:'/home'})
         }else{ 
           this.$message({
