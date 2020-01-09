@@ -14,7 +14,7 @@
       <el-col :span="8">
         <div class="form-info">
           <div class="form-center">
-            <el-form ref="formInfo" :rules="rules" :model="formInfo">
+            <el-form ref="formInfo" :rules="rules" :model="formInfo" @submit.native.prevent>
               <el-form-item class="text">
                 管理员登录
               </el-form-item>
@@ -22,7 +22,7 @@
                 <el-input placeholder="账号" v-model="formInfo.username"></el-input>
               </el-form-item>
               <el-form-item prop="password">
-                <el-input placeholder="密码"   v-model="formInfo.password" ></el-input>
+                <el-input type="password" placeholder="密码"   v-model="formInfo.password" ></el-input>
               </el-form-item>
               <el-form-item prop="captcha">
                 <el-row :gutter="20">
@@ -35,7 +35,7 @@
                 </el-row>
               </el-form-item>
               <el-form-item>
-                <el-button class="login-btn" type="primary" @click="submit">登录</el-button>
+                <el-button class="login-btn" type="primary" native-type="submit" @click.enter="submit" @keyup.enter.native="submit">登录</el-button>
               </el-form-item>
             </el-form>
           </div>
@@ -84,6 +84,17 @@ export default {
         console.log(e);
       }
     },
+	//获取菜单导航
+	async getMenuNav() {
+		const result = await this.$http.get('http://182.61.35.138:8090/renren-fast/sys/menu/nav')
+		if (result && result.data.code == 0) {
+			// this.menuList = result.data.menuList
+			// console.log(this.menuList)
+			this.$store.commit('setMenuList',result.data.menuList)
+			window.localStorage.setItem('menuList',JSON.stringify(result.data.menuList))
+			this.$store.commit('addMenuRouter',this.$router)
+		}
+	},
     submit(){ 
       this.$http.post("http://182.61.35.138:8090/renren-fast/sys/login",{ 
           'username':this.formInfo.username,  
@@ -99,6 +110,7 @@ export default {
           });
 		  this.$store.commit('setToken',data.token) 
 		  window.localStorage.setItem('rrtoken',data.token)
+		  this.getMenuNav()
           this.$router.replace({path:'/home'})
         }else{ 
           this.$message({
@@ -114,6 +126,7 @@ export default {
   },
   created(){
     this.changeImg();
+	
   }
 
 }

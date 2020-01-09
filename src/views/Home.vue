@@ -1,10 +1,10 @@
 <template>
 	<div class="home">
-		<el-container style="height: 760px; border: 1px solid #eee">
+		<el-container style="height: 760px;">
 			<el-aside :width="asideW">
 				<div class="sys-name">人人快速开发平台</div>
-				<el-menu default-active="1-4-1" class="el-menu-vertical-demo" @open="handleOpen" @close="handleClose" :collapse="iscollapse">
-					<el-menu-item index="1">
+				<el-menu default-active="1-4-1" class="el-menu-vertical-demo" router>
+					<el-menu-item index="/index">
 						<i class="el-icon-s-home"></i>
 						<span slot="title">首页</span>
 					</el-menu-item>
@@ -14,23 +14,24 @@
 							<span slot="title">demo</span>
 						</template>
 						<el-menu-item-group>
-							<el-menu-item index="2-1"><i class="el-icon-s-data"></i>echarts</el-menu-item>
-							<el-menu-item index="2-2"><i class="el-icon-edit"></i>ueditor</el-menu-item>
+							<el-menu-item index="/echarts">
+								<i class="el-icon-s-data"></i>echarts
+							</el-menu-item>
+							<el-menu-item index="/ueditor">
+								<i class="el-icon-edit"></i>ueditor
+							</el-menu-item>
 						</el-menu-item-group>
 					</el-submenu>
-					<el-submenu index="3">
+					<el-submenu index="3" v-for="(menuItem,index) in menuList" :key="index">
 						<template slot="title"><i class="el-icon-setting"></i>
-							<span slot="title">系统管理</span>
+							<span slot="title">{{menuItem.name}}</span>
 						</template>
-						<el-menu-item-group>
-							<el-menu-item index="3-1"><i class="el-icon-user-solid"></i>管理员列表</el-menu-item>
-							<el-menu-item index="3-2"><i class="el-icon-time"></i>角色管理</el-menu-item>
-							<el-menu-item index="3-3"><i class="el-icon-time"></i>菜单管理</el-menu-item>
-							<el-menu-item index="3-4"><i class="el-icon-time"></i>SQL监控</el-menu-item>
-							<el-menu-item index="3-5"><i class="el-icon-time"></i>定时任务</el-menu-item>
-							<el-menu-item index="3-6"><i class="el-icon-time"></i>参数管理</el-menu-item>
-							<el-menu-item index="3-7"><i class="el-icon-upload"></i>文件上传</el-menu-item>
-							<el-menu-item index="3-8"><i class="el-icon-time"></i>系统日志</el-menu-item>
+						<el-menu-item-group> 
+							<el-menu-item v-for="(listItem,index) in menuItem.list" 
+								:index="listItem.url.startsWith('http')?'/sql':'/'+listItem.url">
+								<i class="el-icon-user-solid"></i>
+								{{listItem.name}}
+							</el-menu-item>
 						</el-menu-item-group>
 					</el-submenu>
 				</el-menu>
@@ -41,9 +42,13 @@
 					<span class="switch">
 						<i class="el-icon-menu" @click="collapse"></i>
 					</span>
-					<el-menu :default-active="activeIndex" class="el-menu-demo" mode="horizontal" @select="handleSelect">
-						<el-menu-item index="1">设置</el-menu-item>
-						<el-menu-item index="2">官方社区</el-menu-item>
+					<el-menu class="el-menu-demo" mode="horizontal">
+						<el-menu-item index="1">
+							<el-badge value="new" class="item">设置</el-badge>
+						</el-menu-item>
+						<el-menu-item index="2">
+							<el-badge value="hot" class="item">官方社区</el-badge>
+						</el-menu-item>
 						<el-submenu index="3">
 							<template slot="title">Git源码</template>
 							<el-menu-item index="2-1">前端</el-menu-item>
@@ -66,6 +71,9 @@
 				</el-header>
 
 				<el-main>
+					<div width="200px" height="200px">
+						<router-view />
+					</div>
 				</el-main>
 
 			</el-container>
@@ -74,19 +82,19 @@
 			<el-form ref="formPwd" :model="formPwd" :rules="rules">
 				<el-form-item label="账号" :label-width="formLabelWidth">{{userName}}</el-form-item>
 				<el-form-item label="原密码" :label-width="formLabelWidth" prop="oldPwd">
-					<el-input v-model="formPwd.oldPwd" autocomplete="off"></el-input>
+					<el-input type="password" v-model="formPwd.oldPwd" autocomplete="off"></el-input>
 				</el-form-item>
 				<el-form-item label="新密码" :label-width="formLabelWidth" prop="newPwd">
-					<el-input v-model="formPwd.newPwd" autocomplete="off"></el-input>
+					<el-input type="password" v-model="formPwd.newPwd" autocomplete="off"></el-input>
 				</el-form-item>
 				<el-form-item label="确认密码" :label-width="formLabelWidth" prop="confirmPwd">
-					<el-input v-model="formPwd.confirmPwd" autocomplete="off"></el-input>
+					<el-input type="password" v-model="formPwd.confirmPwd" autocomplete="off"></el-input>
 				</el-form-item>
 
 			</el-form>
 			<div slot="footer" class="dialog-footer">
-				<el-button @click="dialogFormVisible = false">取 消</el-button>
-				<el-button type="primary" @click="dialogFormVisible = false">确 定</el-button>
+				<el-button @click="canclePwd">取 消</el-button>
+				<el-button type="primary" @click="updatePwd">确 定</el-button>
 			</div>
 		</el-dialog>
 	</div>
@@ -95,8 +103,18 @@
 <script>
 	export default {
 		data() {
+			var validatePass2 = (rule, value, callback) => {
+				if (value === '') {
+					callback(new Error('请再次输入密码'));
+				} else if (value !== this.formPwd.newPwd) {
+					callback(new Error('两次输入密码不一致!'));
+				} else {
+					callback();
+				}
+			};
 			return {
-				userName:'',
+				menuList: [],
+				userName: '',
 				photoImg: require('../assets/img/headImg.jpg'),
 				iscollapse: false,
 				asideW: '230px',
@@ -105,7 +123,7 @@
 				formPwd: {
 					oldPwd: "",
 					newPwd: "",
-					confirmPwd: "" 
+					confirmPwd: ""
 				},
 				rules: {
 					oldPwd: [{
@@ -133,14 +151,10 @@
 						}
 					],
 					confirmPwd: [{
-							required: true,
-							message: "请确认密码！",
-							trigger: "blur"
-						},
-						{
-							equalTo: "newPwd"
-						}
-					]
+						required: true,
+						validator: validatePass2,
+						trigger: "blur"
+					}]
 				}
 			}
 		},
@@ -153,29 +167,63 @@
 					this.asideW = "80px"
 				}
 			},
-			handleCommand(command){ 
-				if(command == "updatePwd"){
-					this.dialogFormVisible = true 
-				}else if(command == "logout"){
-					this.$router.replace({path:'/'})
-					this.$store.commit("setToken","")
+			handleCommand(command) {
+				if (command == "updatePwd") {
+					this.dialogFormVisible = true
+				} else if (command == "logout") {
+					this.$router.replace({
+						path: '/'
+					})
+					this.$store.commit("setToken", "")
 					window.localStorage.removeItem("rrtoken")
 				}
-				
+
 			},
-			async getUserInfo(){ 
-				debugger
-				const token =  this.$store.state.token;
+			async getUserInfo() {
+				const token = this.$store.state.token;
 				console.log(token);
-				const result = await this.$http.get('http://182.61.35.138:8090/renren-fast/sys/user/info',{params:{token:token}})
-				if(result){
+				const result = await this.$http.get('http://182.61.35.138:8090/renren-fast/sys/user/info')
+				if (result) {
 					console.log(result);
-					this.userName = result.data.user.username 
+					this.userName = result.data.user.username
 				}
+			},
+			updatePwd() {
+				this.$http.post('http://182.61.35.138:8090/renren-fast/sys/user/password', {
+					'password': this.formPwd.oldPwd,
+					'newPassword': this.formPwd.newPwd
+				}).then(({
+					data
+				}) => {
+					if (data.code == 0) {
+						this.$message({
+							message: '修改成功！',
+							type: 'success'
+						});
+						this.dialogFormVisible = false
+					} else {
+						this.$message({
+							message: data.msg,
+							type: 'error'
+						});
+					}
+				})
+			},
+			canclePwd() {
+				this.$refs['formPwd'].resetFields();
+				this.dialogFormVisible = false
+			},
+			getMenuNav(){
+				this.menuList =JSON.parse( window.localStorage.getItem('menuList'))
 			}
+
 		},
-		created(){
+		created() {
 			this.getUserInfo()
+			this.getMenuNav()
+			this.$router.replace({
+				path: '/index'
+			})
 		}
 	}
 </script>
@@ -185,7 +233,7 @@
 	.sys-name {
 		width: 100%;
 		height: 50px;
-		background-color: #008000;
+		background-color: #45c2b5;
 		text-align: center;
 		line-height: 50px;
 		font-weight: bold;
@@ -220,5 +268,16 @@
 		font-size: 20px;
 		line-height: 60px;
 		float: left;
+	}
+
+	.el-menu-demo .el-menu-item {
+		padding: 0 30px;
+	}
+
+	.item {
+		.el-badge__content {
+			top: 12px;
+		}
+
 	}
 </style>
